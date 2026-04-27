@@ -1,0 +1,37 @@
+{
+  "name": "tally-connector",
+  "version": "1.0.0",
+  "description": "Demoable MVP for a Tally bridge control plane and Windows bootstrap installer.",
+  "main": "src/control-plane.js",
+  "scripts": {
+    "server": "node src/control-plane.js",
+    "web": "next dev apps/web -H 127.0.0.1 -p 3000",
+    "build:web": "next build apps/web",
+    "start:api": "node src/control-plane.js",
+    "start:web": "node scripts/start-web.js",
+    "web:build": "next build apps/web",
+    "web:config-check": "node scripts/web-config-check.js",
+    "db:migration-check": "node scripts/db-migration-check.js",
+    "profile:adoption-check": "node scripts/profile-adoption-check.js",
+    "hosted:smoke": "node scripts/hosted-smoke-test.js",
+    "agent": "node agent/cmd/tallybridge-agent/index.js",
+    "demo": "node scripts/demo-cli.js",
+    "mock:tally": "node scripts/mock-tally-server.js",
+    "syntax:check": "node scripts/syntax-check.js",
+    "checkpoint": "node scripts/checkpoint-runner.js",
+    "tally:test": "node tally-test.js",
+    "test": "npm run syntax:check && npm run web:config-check && npm run db:migration-check && npm run profile:adoption-check && npm run web:build && npm run checkpoint"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@tanstack/react-query": "^5.100.5",
+    "axios": "^1.15.0",
+    "lucide-react": "^1.11.0",
+    "next": "^16.2.4",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "./event.v1.schema.json",
+  "title": "TallyBridge Local Event v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "type",
+    "company",
+    "ts"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "v1"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "voucher.saved",
+        "ledger.saved",
+        "company.loaded",
+        "company.unloaded",
+        "stock_item.saved"
+      ]
+    },
+    "company": {
+      "type": "string",
+      "minLength": 1
+    },
+    "object_type": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "master_id": {
+      "type": [
+        "string",
+        "integer",
+        "null"
+      ]
+    },
+    "alter_id": {
+      "type": [
+        "string",
+        "integer",
+        "null"
+      ]
+    },
+    "ts": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

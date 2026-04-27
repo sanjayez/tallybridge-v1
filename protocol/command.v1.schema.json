@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "./command.v1.schema.json",
+  "title": "TallyBridge Command v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "command_id",
+    "connection_id",
+    "type",
+    "requested_at",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "v1"
+    },
+    "command_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "connection_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "connection.pair",
+        "agent.decommission",
+        "agent.upgrade",
+        "tally.list_companies",
+        "tally.list_ledgers",
+        "tally.get_ledger",
+        "tally.list_vouchers",
+        "tally.create_ledger",
+        "tally.create_voucher",
+        "tally.get_report"
+      ]
+    },
+    "company": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "requested_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "idempotency_key": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "payload": {
+      "type": "object"
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

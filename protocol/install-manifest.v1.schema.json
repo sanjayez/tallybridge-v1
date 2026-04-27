@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "./install-manifest.v1.schema.json",
+  "title": "TallyBridge Install Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "install_id",
+    "install_mode",
+    "installed_at",
+    "agent_path",
+    "watcher_mode"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "v1"
+    },
+    "install_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "install_mode": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user"
+      ]
+    },
+    "installed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "agent_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tcp_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "tally_ini_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "tally_install_path": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "watcher_mode": {
+      "type": "string",
+      "enum": [
+        "scheduled_task",
+        "startup_shortcut",
+        "service_sentinel",
+        "manual"
+      ]
+    },
+    "connection_seed": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "pairing_code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "connection_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

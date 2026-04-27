@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "./heartbeat.v1.schema.json",
+  "title": "TallyBridge Heartbeat v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "connection_id",
+    "agent_id",
+    "status",
+    "mode",
+    "sent_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "v1"
+    },
+    "connection_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "agent_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "waiting_for_tally",
+        "active",
+        "active_degraded",
+        "offline",
+        "error",
+        "decommissioned"
+      ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "xml_only",
+        "event_bridge"
+      ]
+    },
+    "install_mode": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "admin",
+        "user",
+        null
+      ]
+    },
+    "company": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "tally_version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "queue_depth": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "last_command_ms": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "last_event_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "sent_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

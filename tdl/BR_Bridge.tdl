@@ -1,0 +1,124 @@
+;; BR_Bridge.tdl - TallyPrime bridge v0
+;; Edit BR_ServerURL / BR_AuthToken in [System: Formula] below.
+
+[System: Formula]
+
+BR_ServerURL	: "http://127.0.0.1:8000/tally/bridge"
+BR_ResultURL	: "http://127.0.0.1:8000/tally/bridge/result"
+BR_AuthToken	: "dev-token"
+BR_ConnectorID	: "demo-connector"
+BR_ImportFileName	: "BR_GatewayImport.xml"
+
+;; Request JSON body (must appear BEFORE the Collection that references it)
+
+[Report: BR_BridgePingReq]
+
+	Export Header	: "Authorization: Bearer " + @@BR_AuthToken
+	Plain JSON	: Yes
+	Form		: BR_BridgePingForm
+
+[Form: BR_BridgePingForm]
+
+	Part	: BR_BridgePingPart
+
+[Part: BR_BridgePingPart]
+
+	Lines	: BR_BridgePingLine
+
+[Line: BR_BridgePingLine]
+
+	Fields	: BR_FldEvent, BR_FldConnector, BR_FldCompany, BR_FldSource, BR_FldInstall, BR_FldTs
+
+[Field: BR_FldEvent]
+
+	Set As	: "ping"
+	JSON Tag	: "event"
+
+[Field: BR_FldCompany]
+
+	Set As	: $Name:Company:##SVCurrentCompany
+	JSON Tag	: "company"
+
+[Field: BR_FldConnector]
+
+	Set As	: @@BR_ConnectorID
+	JSON Tag	: "connectorId"
+
+[Field: BR_FldSource]
+
+	Set As	: "tally-bridge-mvp"
+	JSON Tag	: "source"
+
+[Field: BR_FldInstall]
+
+	Set As	: @@BR_ConnectorID
+	JSON Tag	: "installId"
+
+[Field: BR_FldTs]
+
+	Set As	: $$SysInfo:SystemDate
+	JSON Tag	: "timestamp"
+
+;; POST to server; response rows expose $Status, $cmd, $message, $xml
+
+[Collection: BR_BridgeColl]
+
+	Data Source	: HTTP JSON	: @@BR_ServerURL
+	RemoteRequest	: BR_BridgePingReq	: UTF8
+
+[Function: BR_BridgeRun]
+
+	Variable	: vStatus	: Number
+	Variable	: vCmd		: String
+	Variable	: vMessage	: String
+	Variable	: vXml		: String
+	Variable	: vPath		: String
+
+	05	: Msg Box		: "Bridge"	: "Bridge action triggered. Attempting server poll."
+	10	: Walk Collection	: BR_BridgeColl
+	20	: Set			: vStatus	: $Status
+	30	: Set			: vCmd		: $cmd
+	40	: Set			: vMessage	: $message
+	50	: Set			: vXml		: $xml
+	60	: End Walk
+
+	70	: If			: $$IsEmpty:##vCmd
+	80	: Msg Box		: "Bridge"	: "No cmd in response. Check server JSON, URL, and network."
+	90	: Return
+	100	: End If
+
+	105	: If			: ##vCmd = "noop"
+	106	: Msg Box		: "Bridge"	: "Bridge connected. No queued command."
+	107	: Return
+	108	: End If
+
+	110	: If			: ##vCmd = "show_message"
+	120	: Msg Box		: "Server"	: ##vMessage
+	130	: Return
+	140	: End If
+
+	150	: If			: ##vCmd = "import_xml"
+	160	: If			: $$IsEmpty:##vXml
+	170	: Msg Box		: "Import"	: "Empty xml in response."
+	180	: Return
+	190	: End If
+	200	: Set			: vPath	: $$SysInfo:ApplicationPath + "\\" + @@BR_ImportFileName
+	210	: Open File		: ##vPath	: Text	: Write
+	220	: Write File		: ##vXml
+	230	: Close Target File
+	240	: Set			: Import File	: ##vPath
+	250	: Import		: All Masters
+	260	: If			: $$IsEmpty:$$LastImportError
+	270	: Msg Box		: "Import"	: "Import completed. Check Tally.imp if needed."
+	280	: Else
+	290	: Msg Box		: "Import"	: "Failed: " + $$LastImportError
+	300	: End If
+	310	: Return
+	320	: End If
+
+	330	: Msg Box		: "Bridge"	: "Unknown cmd: " + ##vCmd
+
+[#Menu: Gateway of Tally]
+
+	Add: Key Item: Bridge Test : Alt + B : Call : BR_BridgeRun
+	Add: Item: Before: Quit : Bridge Test : Call : BR_BridgeRun
