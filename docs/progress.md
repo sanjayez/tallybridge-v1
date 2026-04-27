@@ -32,6 +32,7 @@
 - Hosted smoke test is available: `npm run hosted:smoke -- https://YOUR-API-DOMAIN`.
 - Hosted install commands are now guarded against internal bind addresses such as `0.0.0.0`; the API page shows the configured public base URL and `hosted:smoke` fails if the generated one-liner is not public.
 - Windows install now prints the agent log folder, starts the agent with stdout/stderr redirection, warns if the hidden agent exits immediately, and ships a diagnostic script at `%LOCALAPPDATA%\TallyBridge\bundle\installer\windows\diagnose-bridge.ps1`.
+- The local Windows agent no longer requires `node:sqlite`; it uses SQLite when available and falls back to JSONL queue files on Node 20.
 
 ## Local Demo Runbook
 
@@ -52,6 +53,7 @@
 - Verifies old SQLite databases migrate cleanly with `scripts/db-migration-check.js`.
 - Verifies active profile adoption with `scripts/profile-adoption-check.js`, including case-insensitive Windows machine-name matching.
 - Verifies hosted bootstrap/config assumptions with `scripts/web-config-check.js`.
+- Verifies the Node 20-compatible local agent queue fallback with `scripts/agent-queue-compat-check.js`.
 - Runs the installer dry-run and records planned no-admin actions.
 - Starts mock Tally on port `9123`.
 - Starts the agent with isolated state.

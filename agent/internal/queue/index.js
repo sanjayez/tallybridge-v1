@@ -2,7 +2,13 @@
 
 const fs = require("fs");
 const path = require("path");
-const { DatabaseSync } = require("node:sqlite");
+let DatabaseSync = null;
+
+try {
+  ({ DatabaseSync } = require("node:sqlite"));
+} catch {
+  DatabaseSync = null;
+}
 
 function jsonStringify(value, fallback) {
   return JSON.stringify(value === undefined ? fallback : value);
@@ -20,7 +26,75 @@ function jsonParse(value, fallback) {
   }
 }
 
-function createAgentQueue({ stateDir }) {
+function readJsonLines(filePath) {
+  if (!fs.existsSync(filePath)) {
+    return [];
+  }
+
+  return fs.readFileSync(filePath, "utf8")
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => jsonParse(line, null))
+    .filter(Boolean);
+}
+
+function appendJsonLine(filePath, record) {
+  fs.appendFileSync(filePath, `${JSON.stringify(record)}\n`);
+}
+
+function createFileAgentQueue({ stateDir }) {
+  fs.mkdirSync(stateDir, { recursive: true });
+  const dbPath = path.join(stateDir, "agent-state.jsonl");
+  const eventsPath = path.join(stateDir, "agent-events.jsonl");
+  const executionsPath = path.join(stateDir, "agent-executions.jsonl");
+
+  function recordEvent(type, payload) {
+    appendJsonLine(eventsPath, {
+      type,
+      payload,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  function recordExecution({ commandId, commandType, status, result, error, startedAt, completedAt }) {
+    appendJsonLine(executionsPath, {
+      commandId,
+      commandType,
+      status,
+      result: result === undefined ? null : result,
+      error: error === undefined ? null : error,
+      startedAt,
+      completedAt: completedAt || null,
+    });
+  }
+
+  function getStats() {
+    const events = readJsonLines(eventsPath);
+    const lastEvent = events[events.length - 1] || null;
+    return {
+      dbPath,
+      driver: "file",
+      eventCount: events.length,
+      lastEventAt: lastEvent ? lastEvent.createdAt : null,
+    };
+  }
+
+  function listRecentExecutions() {
+    return readJsonLines(executionsPath)
+      .sort((left, right) => String(right.startedAt).localeCompare(String(left.startedAt)))
+      .slice(0, 20);
+  }
+
+  return {
+    dbPath,
+    getStats,
+    listRecentExecutions,
+    recordEvent,
+    recordExecution,
+  };
+}
+
+function createSqliteAgentQueue({ stateDir }) {
   fs.mkdirSync(stateDir, { recursive: true });
   const dbPath = path.join(stateDir, "agent-state.db");
   const db = new DatabaseSync(dbPath);
@@ -91,6 +165,7 @@ function createAgentQueue({ stateDir }) {
     const lastEventRow = statements.lastEventAt.get();
     return {
       dbPath,
+      driver: "sqlite",
       eventCount: countRow ? countRow.count : 0,
       lastEventAt: lastEventRow ? lastEventRow.created_at : null,
     };
@@ -115,6 +190,14 @@ function createAgentQueue({ stateDir }) {
     recordEvent,
     recordExecution,
   };
+}
+
+function createAgentQueue({ stateDir }) {
+  if (process.env.TALLYBRIDGE_AGENT_QUEUE_DRIVER === "file" || !DatabaseSync) {
+    return createFileAgentQueue({ stateDir });
+  }
+
+  return createSqliteAgentQueue({ stateDir });
 }
 
 module.exports = {

@@ -96,7 +96,7 @@ function New-Shortcut {
 function Resolve-NodePath {
     $node = Get-Command node -ErrorAction SilentlyContinue
     if (-not $node) {
-        throw "Node.js is required for this demo bridge agent. Install Node.js 24 LTS, then re-run setup. The production agent will be a signed single binary."
+        throw "Node.js 20 or newer is required for this demo bridge agent. The production agent will be a signed single binary."
     }
 
     return $node.Source

@@ -11,6 +11,7 @@
     "start:web": "node scripts/start-web.js",
     "web:build": "next build apps/web",
     "web:config-check": "node scripts/web-config-check.js",
+    "agent:compat-check": "node scripts/agent-queue-compat-check.js",
     "db:migration-check": "node scripts/db-migration-check.js",
     "profile:adoption-check": "node scripts/profile-adoption-check.js",
     "hosted:smoke": "node scripts/hosted-smoke-test.js",
@@ -20,7 +21,7 @@
     "syntax:check": "node scripts/syntax-check.js",
     "checkpoint": "node scripts/checkpoint-runner.js",
     "tally:test": "node tally-test.js",
-    "test": "npm run syntax:check && npm run web:config-check && npm run db:migration-check && npm run profile:adoption-check && npm run web:build && npm run checkpoint"
+    "test": "npm run syntax:check && npm run web:config-check && npm run agent:compat-check && npm run db:migration-check && npm run profile:adoption-check && npm run web:build && npm run checkpoint"
   },
   "keywords": [],
   "author": "",

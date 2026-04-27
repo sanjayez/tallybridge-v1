@@ -80,7 +80,7 @@ function renderInstallBootstrap({ pairingCode, serverUrl, dryRun }) {
     `$pairingCode = ${quotePowerShell(pairingCode)}`,
     "$node = Get-Command node -ErrorAction SilentlyContinue",
     "if (-not $node) {",
-    "  throw 'Node.js is required for this hosted demo bridge agent. Install Node.js 24 LTS, then re-run this command. The production agent will be a signed single binary.'",
+    "  throw 'Node.js 20 or newer is required for this hosted demo bridge agent. The production agent will be a signed single binary.'",
     "}",
     "$bundleRoot = Join-Path $env:LOCALAPPDATA 'TallyBridge\\bundle'",
     "$manifestUrl = \"$serverUrl/download/bridge-manifest.json\"",
