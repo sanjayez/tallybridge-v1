@@ -8,6 +8,7 @@ const { getTokenFromHeader, notFound, parseBody, sendBuffer, sendJson, sendText 
 
 const repoRoot = path.join(__dirname, "..", "..", "..", "..");
 const bundleRoots = ["agent", "tdl", path.join("installer", "windows")];
+const bundleFiles = [path.join("src", "tally-xml.js")];
 const bundleExtensions = new Set([".js", ".ps1", ".tdl", ".tpj"]);
 
 function quotePowerShell(value) {
@@ -20,6 +21,27 @@ function toBundlePath(filePath) {
 
 function listBundleFiles() {
   const files = [];
+  const seen = new Set();
+
+  function pushFile(relativePath) {
+    const absolutePath = path.join(repoRoot, relativePath);
+    if (!fs.existsSync(absolutePath) || !bundleExtensions.has(path.extname(relativePath).toLowerCase())) {
+      return;
+    }
+
+    const bundlePath = toBundlePath(relativePath);
+    if (seen.has(bundlePath)) {
+      return;
+    }
+
+    const body = fs.readFileSync(absolutePath);
+    seen.add(bundlePath);
+    files.push({
+      path: bundlePath,
+      size: body.length,
+      sha256: createHash("sha256").update(body).digest("hex"),
+    });
+  }
 
   function walk(relativeDir) {
     const absoluteDir = path.join(repoRoot, relativeDir);
@@ -39,17 +61,16 @@ function listBundleFiles() {
         continue;
       }
 
-      const body = fs.readFileSync(absolutePath);
-      files.push({
-        path: toBundlePath(relativePath),
-        size: body.length,
-        sha256: createHash("sha256").update(body).digest("hex"),
-      });
+      pushFile(relativePath);
     }
   }
 
   for (const root of bundleRoots) {
     walk(root);
+  }
+
+  for (const file of bundleFiles) {
+    pushFile(file);
   }
 
   return files.sort((left, right) => left.path.localeCompare(right.path));
