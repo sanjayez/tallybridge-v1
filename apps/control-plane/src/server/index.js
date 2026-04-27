@@ -8,11 +8,28 @@ const { createLegacyBridgeService } = require("../services/legacy-bridge-service
 const { createStore } = require("../store/database");
 const { sendJson } = require("./http");
 
+function trimBaseUrl(value) {
+  return String(value || "").replace(/\/+$/, "");
+}
+
+function derivePublicBaseUrl({ options, host, port }) {
+  const explicitBaseUrl = trimBaseUrl(options.publicBaseUrl || process.env.TALLYBRIDGE_PUBLIC_BASE_URL);
+  if (explicitBaseUrl) {
+    return explicitBaseUrl;
+  }
+
+  if (process.env.RAILWAY_PUBLIC_DOMAIN) {
+    return `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`.replace(/\/+$/, "");
+  }
+
+  const fallbackHost = host === "0.0.0.0" || host === "::" ? "127.0.0.1" : host;
+  return `http://${fallbackHost}:${port}`;
+}
+
 function createControlPlane(options = {}) {
   const host = options.host || process.env.BRIDGE_HOST || (process.env.NODE_ENV === "production" ? "0.0.0.0" : "127.0.0.1");
   const port = Number(options.port || process.env.BRIDGE_PORT || process.env.PORT || 8000);
-  const railwayBaseUrl = process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : "";
-  const publicBaseUrl = (options.publicBaseUrl || process.env.TALLYBRIDGE_PUBLIC_BASE_URL || railwayBaseUrl || `http://${host}:${port}`).replace(/\/+$/, "");
+  const publicBaseUrl = derivePublicBaseUrl({ options, host, port });
   const store = createStore({ dbPath: options.dbPath });
 
   const services = {
@@ -21,7 +38,7 @@ function createControlPlane(options = {}) {
     legacy: createLegacyBridgeService({ store }),
   };
 
-  const router = createRouter({ store, services });
+  const router = createRouter({ store, services, publicBaseUrl });
   const server = http.createServer(async (req, res) => {
     try {
       await router.handle(req, res);
@@ -40,7 +57,8 @@ function createControlPlane(options = {}) {
     start() {
       return new Promise((resolve) => {
         server.listen(port, host, () => {
-          console.log(`[control-plane] listening on ${publicBaseUrl}`);
+          console.log(`[control-plane] listening on http://${host}:${port}`);
+          console.log(`[control-plane] public base URL: ${publicBaseUrl}`);
           console.log(`[control-plane] sqlite db: ${store.dbPath}`);
           resolve();
         });
@@ -57,5 +75,6 @@ async function startControlPlaneFromEnv() {
 
 module.exports = {
   createControlPlane,
+  derivePublicBaseUrl,
   startControlPlaneFromEnv,
 };

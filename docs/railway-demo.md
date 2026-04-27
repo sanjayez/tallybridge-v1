@@ -33,11 +33,15 @@ NODE_ENV=production
 BRIDGE_HOST=0.0.0.0
 TALLYBRIDGE_DB_PATH=/app/data/tallybridge.db
 TALLYBRIDGE_PUBLIC_BASE_URL=https://YOUR-API-DOMAIN
+TALLYBRIDGE_WEB_URL=https://YOUR-WEB-DOMAIN
 ```
 
 Railway provides `PORT`, so the API reads that automatically.
 
 Generate a Railway public domain for this service. Use that domain for `TALLYBRIDGE_PUBLIC_BASE_URL`.
+
+If you open the API domain in a browser, seeing the text `TallyBridge Control Plane` page is expected. That is not the dashboard.
+The API page should show `Public base URL: https://YOUR-API-DOMAIN`. If it shows `0.0.0.0`, `127.0.0.1`, or `localhost`, fix `TALLYBRIDGE_PUBLIC_BASE_URL` before copying any setup command.
 
 ### Web Service
 
@@ -56,6 +60,8 @@ CONTROL_PLANE_URL=https://YOUR-API-DOMAIN
 ```
 
 Generate a Railway public domain for this service.
+
+Open this Web service domain to see the dashboard.
 
 ## What To Send Back To Codex
 
@@ -85,15 +91,38 @@ This verifies:
 ## Demo Flow
 
 1. Open the hosted Web URL.
-2. Click `Create or repair`.
-3. Copy the generated one-line command.
-4. Run it on the Windows machine with Tally installed.
-5. Start Tally.
-6. Watch the hosted UI move through:
+2. Enter a stable customer reference, for example `sanforge-demo`.
+3. Click `Create or repair`.
+4. Copy the generated one-line command.
+5. Run it on the Windows machine with Tally installed.
+6. Start Tally.
+7. Watch the hosted UI move through:
    - pending/no bridge
    - bridge online but Tally closed
    - active when Tally XML is reachable
-7. Run Companies, Ledgers, and Create ledger from the Web UI.
+8. Run Companies, Ledgers, and Create ledger from the Web UI.
+
+In hosted mode, the dashboard cannot know the customer's Windows profile before the local bridge runs. The customer reference identifies the connection first; after pairing, the local bridge reports the actual Windows machine name through heartbeats.
+
+## Troubleshooting
+
+If the setup command contains this shape, it is wrong for a remote Windows machine:
+
+```powershell
+irm 'http://0.0.0.0:8080/install/PAIRING-CODE' | iex
+```
+
+`0.0.0.0` is only the address the container listens on internally. Set this variable on the API Railway service, redeploy the API service, then click `Create or repair` again:
+
+```txt
+TALLYBRIDGE_PUBLIC_BASE_URL=https://YOUR-API-DOMAIN
+```
+
+The command copied from the Web UI should instead start with:
+
+```powershell
+irm 'https://YOUR-API-DOMAIN/install/PAIRING-CODE' | iex
+```
 
 ## Current Demo Limitation
 

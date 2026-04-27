@@ -49,6 +49,16 @@ async function main() {
     throw new Error("Connection did not return a pairing code");
   }
 
+  const installCommand = connection.install?.installCommand || "";
+  const installUrl = connection.install?.installUrl || "";
+  if (!installCommand.includes(apiUrl) || !installUrl.startsWith(`${apiUrl}/install/`)) {
+    throw new Error(`Install command is not using the public API URL. Got: ${installCommand}`);
+  }
+
+  if (/(^|[^0-9])(0\.0\.0\.0|127\.0\.0\.1|localhost)([^0-9]|$)/i.test(installCommand)) {
+    throw new Error(`Install command contains a non-public host. Got: ${installCommand}`);
+  }
+
   const installScript = await requestText(`${apiUrl}/install/${pairingCode}?dryRun=1`);
   if (!installScript.includes("/download/bridge-manifest.json") || !installScript.includes(pairingCode)) {
     throw new Error("Install bootstrap did not include hosted bundle download flow");

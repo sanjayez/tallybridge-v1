@@ -52,9 +52,30 @@ function deriveHealthColor(status) {
   return "red";
 }
 
+function normalizeInstallBaseUrl(baseUrl) {
+  const normalized = String(baseUrl || "").replace(/\/+$/, "");
+  let parsed;
+  try {
+    parsed = new URL(normalized);
+  } catch {
+    throw new Error("TALLYBRIDGE_PUBLIC_BASE_URL must be a valid URL before generating install commands");
+  }
+
+  if (parsed.hostname === "0.0.0.0" || parsed.hostname === "::") {
+    throw new Error("Install command cannot use 0.0.0.0. Set TALLYBRIDGE_PUBLIC_BASE_URL to the public API URL.");
+  }
+
+  if (process.env.NODE_ENV === "production" && ["127.0.0.1", "localhost", "::1"].includes(parsed.hostname)) {
+    throw new Error("Hosted install command needs TALLYBRIDGE_PUBLIC_BASE_URL set to the public API URL.");
+  }
+
+  return normalized;
+}
+
 function createConnectionService({ store, publicBaseUrl }) {
-  function buildInstallPayload(connection, reused) {
-    const installUrl = `${publicBaseUrl}/install/${connection.pairingCode}`;
+  function buildInstallPayload(connection, reused, publicBaseUrlOverride = null) {
+    const installBaseUrl = normalizeInstallBaseUrl(publicBaseUrlOverride || publicBaseUrl);
+    const installUrl = `${installBaseUrl}/install/${connection.pairingCode}`;
     return {
       pairingCode: connection.pairingCode,
       installUrl,
@@ -68,6 +89,7 @@ function createConnectionService({ store, publicBaseUrl }) {
     externalCustomerId = null,
     metadata = {},
     profileMachineName = null,
+    publicBaseUrlOverride = null,
   }) {
     const pairingCode = randomPairingCode();
     const pairingExpiresAt = pairingExpiryIso();
@@ -87,7 +109,7 @@ function createConnectionService({ store, publicBaseUrl }) {
       return {
         connection,
         created: false,
-        install: buildInstallPayload(connection, true),
+        install: buildInstallPayload(connection, true, publicBaseUrlOverride),
       };
     }
 
@@ -119,7 +141,7 @@ function createConnectionService({ store, publicBaseUrl }) {
       return {
         connection,
         created: false,
-        install: buildInstallPayload(connection, true),
+        install: buildInstallPayload(connection, true, publicBaseUrlOverride),
       };
     }
 
@@ -134,7 +156,7 @@ function createConnectionService({ store, publicBaseUrl }) {
     return {
       connection,
       created: true,
-      install: buildInstallPayload(connection, false),
+      install: buildInstallPayload(connection, false, publicBaseUrlOverride),
     };
   }
 
@@ -230,4 +252,5 @@ function createConnectionService({ store, publicBaseUrl }) {
 
 module.exports = {
   createConnectionService,
+  normalizeInstallBaseUrl,
 };

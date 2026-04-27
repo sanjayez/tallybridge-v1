@@ -74,12 +74,6 @@ export function Dashboard() {
   const [ledgerName, setLedgerName] = useState(`Bridge Test ${Date.now().toString().slice(-5)}`);
   const [lastAction, setLastAction] = useState(null);
   const [latestInstall, setLatestInstall] = useState(null);
-  const [profileApplied, setProfileApplied] = useState(false);
-
-  const localProfileQuery = useQuery({
-    queryKey: ["local-profile"],
-    queryFn: async () => (await apiRequest("/v1/local-profile")).data,
-  });
 
   const connectionsQuery = useQuery({
     queryKey: ["connections"],
@@ -87,43 +81,23 @@ export function Dashboard() {
   });
 
   const connections = connectionsQuery.data || [];
-  const localProfile = localProfileQuery.data || null;
   const displayConnections = useMemo(() => {
     if (!connections.length) {
       return [];
     }
 
-    if (localProfile?.externalCustomerId) {
-      const profileMatches = connections.filter(
-        (connection) => connection.externalCustomerId === localProfile.externalCustomerId
+    const requestedRef = customerRef.trim();
+    if (requestedRef) {
+      const customerMatches = connections.filter(
+        (connection) => connection.externalCustomerId === requestedRef
       );
-      if (profileMatches.length) {
-        return profileMatches;
-      }
-    }
-
-    if (localProfile?.machineName) {
-      const localMachineName = localProfile.machineName.toLowerCase();
-      const machineMatches = connections
-        .filter(
-          (connection) =>
-            connection.tenantId === "demo-tenant" &&
-            !connection.externalCustomerId &&
-            connection.machineName?.toLowerCase() === localMachineName
-        )
-        .sort((left, right) => {
-          const leftHeartbeat = Date.parse(left.lastHeartbeat || "");
-          const rightHeartbeat = Date.parse(right.lastHeartbeat || "");
-          return (Number.isFinite(rightHeartbeat) ? rightHeartbeat : 0) -
-            (Number.isFinite(leftHeartbeat) ? leftHeartbeat : 0);
-        });
-      if (machineMatches.length) {
-        return [machineMatches[0]];
+      if (customerMatches.length) {
+        return customerMatches;
       }
     }
 
     return connections.filter((connection) => connection.tenantId === "demo-tenant").slice(0, 1);
-  }, [connections, localProfile]);
+  }, [connections, customerRef]);
 
   const selectedConnection = useMemo(
     () =>
@@ -132,17 +106,6 @@ export function Dashboard() {
         : displayConnections.find((connection) => connection.pairingCode) || displayConnections[0] || null,
     [displayConnections, selectedId]
   );
-
-  useEffect(() => {
-    if (!localProfile || profileApplied) {
-      return;
-    }
-
-    if (customerRef === "demo-customer" || !customerRef.trim()) {
-      setCustomerRef(localProfile.externalCustomerId);
-    }
-    setProfileApplied(true);
-  }, [customerRef, localProfile, profileApplied]);
 
   useEffect(() => {
     if (!displayConnections.length) {
@@ -180,10 +143,8 @@ export function Dashboard() {
         body: {
           tenantId: "demo-tenant",
           externalCustomerId: customerRef,
-          profileMachineName: localProfile?.machineName || null,
           metadata: {
             createdFrom: "web-ui",
-            localProfile,
           },
         },
       }),
@@ -250,7 +211,6 @@ export function Dashboard() {
         : null;
   const installCommand = activeInstall?.installCommand || "";
   const uiError =
-    localProfileQuery.error ||
     connectionsQuery.error ||
     healthQuery.error ||
     commandsQuery.error ||
@@ -282,7 +242,7 @@ export function Dashboard() {
             }}
           >
             <label>
-              Windows profile key
+              Customer reference
               <input value={customerRef} onChange={(event) => setCustomerRef(event.target.value)} />
             </label>
             <IconButton icon={Plus} type="submit" disabled={createConnection.isPending}>
@@ -293,7 +253,7 @@ export function Dashboard() {
           <div className="connectionList">
             {hiddenConnectionCount ? (
               <p className="connectionHint">
-                Showing this Windows profile. Hiding {hiddenConnectionCount} historical demo row
+                Showing this customer reference. Hiding {hiddenConnectionCount} historical demo row
                 {hiddenConnectionCount === 1 ? "" : "s"}.
               </p>
             ) : null}

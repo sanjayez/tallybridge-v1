@@ -120,7 +120,7 @@ function getLocalProfile() {
   };
 }
 
-function renderHome(stats) {
+function renderHome(stats, publicBaseUrl) {
   const lines = [
     "TallyBridge Control Plane",
     "========================",
@@ -128,6 +128,9 @@ function renderHome(stats) {
     `Connections seen: ${stats.connections}`,
     `Queued commands: ${stats.commandsQueued}`,
     `SQLite DB: ${stats.dbPath}`,
+    `Public base URL: ${publicBaseUrl}`,
+    "",
+    process.env.TALLYBRIDGE_WEB_URL ? `Dashboard: ${process.env.TALLYBRIDGE_WEB_URL}` : "Dashboard: configure TALLYBRIDGE_WEB_URL on the API service or deploy the Web service separately.",
     "",
     "Key endpoints:",
     "POST /v1/connections",
@@ -171,7 +174,7 @@ function normalizeHeartbeat(body) {
   };
 }
 
-function createRouter({ store, services }) {
+function createRouter({ store, services, publicBaseUrl }) {
   const { commands, connections, legacy } = services;
 
   async function handleLegacyRoutes(req, res, url) {
@@ -237,6 +240,7 @@ function createRouter({ store, services }) {
         externalCustomerId: body.externalCustomerId || body.external_customer_id || null,
         profileMachineName: body.profileMachineName || body.profile_machine_name || null,
         metadata: body.metadata || {},
+        publicBaseUrlOverride: getRequestBaseUrl(req, url),
       });
       sendJson(res, created.created ? 201 : 200, {
         data: created.connection,
@@ -485,7 +489,7 @@ function createRouter({ store, services }) {
     const url = new URL(req.url, "http://127.0.0.1");
 
     if (req.method === "GET" && url.pathname === "/") {
-      sendText(res, 200, renderHome(store.getStats()));
+      sendText(res, 200, renderHome(store.getStats(), publicBaseUrl));
       return;
     }
 

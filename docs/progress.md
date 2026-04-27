@@ -30,6 +30,7 @@
 - Hosted demo bootstrap is available: `/install/:pairingCode` downloads an allowlisted bridge bundle from `/download/bridge-manifest.json` and `/download/bridge-file`.
 - Railway deployment commands are defined: `start:api`, `build:web`, and `start:web`.
 - Hosted smoke test is available: `npm run hosted:smoke -- https://YOUR-API-DOMAIN`.
+- Hosted install commands are now guarded against internal bind addresses such as `0.0.0.0`; the API page shows the configured public base URL and `hosted:smoke` fails if the generated one-liner is not public.
 
 ## Local Demo Runbook
 
