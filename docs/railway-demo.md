@@ -104,6 +104,12 @@ This verifies:
 
 In hosted mode, the dashboard cannot know the customer's Windows profile before the local bridge runs. The customer reference identifies the connection first; after pairing, the local bridge reports the actual Windows machine name through heartbeats.
 
+The install output should include `Agent process started: <pid>` and an `Agent log:` folder. If it does not, run the diagnostic script on the Windows machine:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "$env:LOCALAPPDATA\TallyBridge\bundle\installer\windows\diagnose-bridge.ps1"
+```
+
 ## Troubleshooting
 
 If the setup command contains this shape, it is wrong for a remote Windows machine:

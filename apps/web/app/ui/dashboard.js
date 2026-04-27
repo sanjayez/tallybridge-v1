@@ -26,10 +26,6 @@ const colorClass = {
   gray: "statusGray",
 };
 
-function buildInstallCommand(pairingCode) {
-  return `powershell -NoProfile -ExecutionPolicy Bypass -Command "irm 'http://127.0.0.1:8000/install/${pairingCode}' | iex"`;
-}
-
 function statusLabel(value) {
   const labels = {
     active: "Active",
@@ -157,9 +153,7 @@ export function Dashboard() {
       setLatestInstall({
         connectionId: payload.data.id,
         pairingCode: payload.install?.pairingCode || payload.data.pairingCode,
-        installCommand:
-          payload.install?.installCommand ||
-          buildInstallCommand(payload.install?.pairingCode || payload.data.pairingCode),
+        installCommand: payload.install?.installCommand || "",
       });
       setLastAction({
         title: payload.meta?.created ? "Connection created" : "Existing connection returned",
@@ -202,11 +196,11 @@ export function Dashboard() {
   const activeInstall =
     latestInstall?.connectionId === selectedId
       ? latestInstall
-      : selectedConnection?.pairingCode
+      : selectedConnection?.installCommand
         ? {
             connectionId: selectedConnection.id,
-            pairingCode: selectedConnection.pairingCode,
-            installCommand: buildInstallCommand(selectedConnection.pairingCode),
+            pairingCode: selectedConnection.install?.pairingCode || selectedConnection.pairingCode,
+            installCommand: selectedConnection.installCommand,
           }
         : null;
   const installCommand = activeInstall?.installCommand || "";

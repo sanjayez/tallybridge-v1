@@ -66,9 +66,10 @@ async function main() {
 
   const manifest = await requestJson(`${apiUrl}/download/bridge-manifest.json`);
   const installerFile = manifest.files.find((file) => file.path === "installer/windows/install-bridge.ps1");
+  const diagnosticFile = manifest.files.find((file) => file.path === "installer/windows/diagnose-bridge.ps1");
   const agentFile = manifest.files.find((file) => file.path === "agent/cmd/tallybridge-agent/index.js");
   const tdlFile = manifest.files.find((file) => file.path === "tdl/BR_Bridge.tdl");
-  if (!installerFile || !agentFile || !tdlFile) {
+  if (!installerFile || !diagnosticFile || !agentFile || !tdlFile) {
     throw new Error("Hosted bridge manifest is missing required files");
   }
 

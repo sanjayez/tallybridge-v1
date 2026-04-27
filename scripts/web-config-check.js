@@ -22,8 +22,8 @@ const requiredConfigSnippets = [
 ];
 
 const requiredDashboardSnippets = [
-  "buildInstallCommand",
-  "/install/${pairingCode}",
+  "payload.install?.installCommand",
+  "selectedConnection?.installCommand",
   "latestInstall",
   "Click Create or repair to generate a fresh one-line setup command.",
 ];

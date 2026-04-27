@@ -93,6 +93,15 @@ function New-Shortcut {
     $shortcut.Save()
 }
 
+function Resolve-NodePath {
+    $node = Get-Command node -ErrorAction SilentlyContinue
+    if (-not $node) {
+        throw "Node.js is required for this demo bridge agent. Install Node.js 24 LTS, then re-run setup. The production agent will be a signed single binary."
+    }
+
+    return $node.Source
+}
+
 $repoRoot = Resolve-RepoRoot
 $isAdmin = Test-IsAdmin
 $installMode = "user"
@@ -107,10 +116,14 @@ $resolvedBridgeSource = Resolve-BridgeSource -ProvidedPath $BridgeSource
 $resolvedTallyIniPath = Find-TallyIni -ProvidedPath $TallyIniPath
 $bridgeInstallDir = Join-Path $defaultRoot "bridge"
 $agentInstallDir = Join-Path $defaultRoot "agent"
+$agentLogDir = Join-Path $agentInstallDir "logs"
+$agentStdoutPath = Join-Path $agentLogDir "agent.stdout.log"
+$agentStderrPath = Join-Path $agentLogDir "agent.stderr.log"
 $bridgeTargetPath = Join-Path $bridgeInstallDir "BR_EventBridge.installed.tdl"
 $agentConfigPath = Join-Path $agentInstallDir "agent-config.json"
 $manifestPath = Join-Path $defaultRoot "install-manifest.json"
 $repoAgentEntry = Join-Path $repoRoot "agent\cmd\tallybridge-agent\index.js"
+$nodePath = Resolve-NodePath
 $startupFolder = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\Startup"
 $startupShortcutPath = Join-Path $startupFolder "TallyBridge.lnk"
 $existingManifest = $null
@@ -131,7 +144,7 @@ $agentArgs = "`"$repoAgentEntry`" --control-plane-url `"$ServerUrl`" --state-dir
 if ($PairingCode) {
     $agentArgs += " --pairing-code `"$PairingCode`""
 }
-$agentLaunchCommand = "node $agentArgs"
+$agentLaunchCommand = "`"$nodePath`" $agentArgs"
 
 $actions = @(
     @{ step = "detect_privilege"; detail = "No-admin user-mode install. Elevated=$isAdmin but default remains current-user." },
@@ -161,6 +174,7 @@ $manifest = @{
     install_mode = $installMode
     installed_at = (Get-Date).ToString("o")
     agent_path = $repoAgentEntry
+    node_path = $nodePath
     tcp_path = $bridgeTargetPath
     tally_ini_path = if ($resolvedTallyIniPath) { $resolvedTallyIniPath } else { $null }
     tally_install_path = if ($TallyInstallPath) { $TallyInstallPath } else { $null }
@@ -173,6 +187,8 @@ $manifest = @{
     meta = @{
         control_plane_url = $ServerUrl
         repo_root = $repoRoot
+        stdout_log = $agentStdoutPath
+        stderr_log = $agentStderrPath
         dry_run = [bool]$DryRun
         no_start = [bool]$NoStart
         repair = [bool]$existingManifest
@@ -233,11 +249,12 @@ if ($DryRun) {
 
 New-Item -ItemType Directory -Force -Path $bridgeInstallDir | Out-Null
 New-Item -ItemType Directory -Force -Path $agentInstallDir | Out-Null
+New-Item -ItemType Directory -Force -Path $agentLogDir | Out-Null
 New-Item -ItemType Directory -Force -Path $startupFolder | Out-Null
 Copy-Item -Path $resolvedBridgeSource -Destination $bridgeTargetPath -Force
 Set-Content -Path $agentConfigPath -Value ($agentConfig | ConvertTo-Json -Depth 4) -Encoding ASCII
 Set-Content -Path $manifestPath -Value ($manifest | ConvertTo-Json -Depth 6) -Encoding ASCII
-New-Shortcut -ShortcutPath $startupShortcutPath -TargetPath "node" -Arguments $agentArgs -WorkingDirectory $repoRoot
+New-Shortcut -ShortcutPath $startupShortcutPath -TargetPath $nodePath -Arguments $agentArgs -WorkingDirectory $repoRoot
 
 if ($resolvedTallyIniPath) {
     try {
@@ -251,11 +268,22 @@ if ($resolvedTallyIniPath) {
 }
 
 if (-not $NoStart) {
-    Start-Process -FilePath "node" -ArgumentList $agentArgs -WorkingDirectory $repoRoot -WindowStyle Hidden
+    $agentProcess = Start-Process -FilePath $nodePath -ArgumentList $agentArgs -WorkingDirectory $repoRoot -WindowStyle Hidden -RedirectStandardOutput $agentStdoutPath -RedirectStandardError $agentStderrPath -PassThru
+    Start-Sleep -Seconds 2
+    if ($agentProcess.HasExited) {
+        Write-Warning "TallyBridge agent exited immediately with code $($agentProcess.ExitCode)."
+        if (Test-Path $agentStderrPath) {
+            Write-Warning "Agent stderr tail:"
+            Get-Content $agentStderrPath -Tail 20 | ForEach-Object { Write-Warning $_ }
+        }
+    } else {
+        Write-Host "Agent process started: $($agentProcess.Id)"
+    }
 }
 
 Write-Host "TallyBridge install complete."
 Write-Host "Manifest: $manifestPath"
 Write-Host "Startup shortcut: $startupShortcutPath"
+Write-Host "Agent log: $agentLogDir"
 Write-Host "Agent launch:"
 Write-Host $agentLaunchCommand

@@ -164,8 +164,19 @@ function createConnectionService({ store, publicBaseUrl }) {
     return store.listConnections().map((connection) => {
       const heartbeat = store.getLatestHeartbeat(connection.id);
       const status = deriveHealthStatus(connection, heartbeat);
+      let install = null;
+      if (connection.pairingCode) {
+        try {
+          install = buildInstallPayload(connection, true);
+        } catch {
+          install = null;
+        }
+      }
       return {
         ...connection,
+        install,
+        installCommand: install?.installCommand || null,
+        installUrl: install?.installUrl || null,
         healthStatus: status,
         healthColor: deriveHealthColor(status),
         bridgeStatus: status === "unreachable" ? "offline" : "online",

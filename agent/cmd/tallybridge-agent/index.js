@@ -6,8 +6,9 @@ const { createAgentQueue } = require("../../internal/queue");
 const { createAgentRuntime } = require("../../internal/runtime/agent-runtime");
 
 async function main() {
+  let logger = null;
   const { config, persist } = createAgentConfig();
-  const logger = createLogger({ stateDir: config.stateDir, logLevel: config.logLevel });
+  logger = createLogger({ stateDir: config.stateDir, logLevel: config.logLevel });
   const queue = createAgentQueue({ stateDir: config.stateDir });
   const runtime = createAgentRuntime({ config, persist, logger, queue });
 
@@ -24,5 +25,15 @@ async function main() {
 
 main().catch((error) => {
   console.error(error);
+  try {
+    const { config } = createAgentConfig();
+    const logger = createLogger({ stateDir: config.stateDir, logLevel: "info" });
+    logger.error("agent exited during startup", {
+      error: error.message,
+      stack: error.stack,
+    });
+  } catch {
+    // Keep the original stderr error visible if logging cannot initialize.
+  }
   process.exit(1);
 });

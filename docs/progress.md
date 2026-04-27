@@ -31,6 +31,7 @@
 - Railway deployment commands are defined: `start:api`, `build:web`, and `start:web`.
 - Hosted smoke test is available: `npm run hosted:smoke -- https://YOUR-API-DOMAIN`.
 - Hosted install commands are now guarded against internal bind addresses such as `0.0.0.0`; the API page shows the configured public base URL and `hosted:smoke` fails if the generated one-liner is not public.
+- Windows install now prints the agent log folder, starts the agent with stdout/stderr redirection, warns if the hidden agent exits immediately, and ships a diagnostic script at `%LOCALAPPDATA%\TallyBridge\bundle\installer\windows\diagnose-bridge.ps1`.
 
 ## Local Demo Runbook
 
